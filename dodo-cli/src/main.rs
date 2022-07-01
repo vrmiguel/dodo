@@ -1,3 +1,4 @@
+use dodo::utils::today;
 use dodo::Checkbox;
 pub use dodo_internals as dodo;
 pub use error::{Error, Result};
@@ -25,25 +26,14 @@ fn run() -> Result<()> {
         files::open_or_create(path)?
     };
 
+    let mut bookkeeper = Bookkeeper::init()?;
+
     if file.is_empty()? {
         eprintln!("Creating initial file for {today}");
-        // TODO: check the last registered file
-        let mut bookkeeper = Bookkeeper::init()?;
         if bookkeeper.last_entry == today {
             // Clean slate: there are no tasks to move over to today!
-            println!("adding sample task");
-            let task = Task {
-                name: "Fazer o TCC".into(),
-                is_done: true,
-                description: "Começar a introdução".into(),
-                creation_date: today,
-                due_date: None,
-                priority: Priority::High,
-                checklist: vec![Checkbox::with_description("Procurar metodologia".into())]
-                    .into_iter()
-                    .collect(),
-            };
-            bookkeeper.append_to_today(&[task])?;
+            println!("Adding a sample task");
+            bookkeeper.append_to_today(&[sample_task()])?;
         } else {
             // We'll move the pending tasks from the last entry over to
             // the current entry
@@ -54,11 +44,34 @@ fn run() -> Result<()> {
         }
     }
 
+    // Get the current task set
+    let task_set = bookkeeper.last_entry_taskset()?;
+    // Let the user edit the task set as he sees fit
+    let edited_text = edit::edit(task_set.to_string())?;
+
+    dbg!(edited_text);
+
     Ok(())
 }
 
 fn main() {
     if let Err(err) = run() {
         println!("Error: {err}");
+    }
+}
+
+pub fn sample_task() -> Task {
+    Task {
+        name: "Fill out my tasks".into(),
+        is_done: false,
+        description: "Write about stuff I need to do today".into(),
+        creation_date: today(),
+        due_date: None,
+        priority: Priority::High,
+        checklist: vec![Checkbox::with_description(
+            "Figure out how to use dodo".into(),
+        )]
+        .into_iter()
+        .collect(),
     }
 }

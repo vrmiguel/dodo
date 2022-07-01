@@ -12,3 +12,4 @@ dodo-internals = { path = "../dodo-internals" }
 directories = "3.0.2"
 thiserror = "1.0.31"
 fs-err = "2.7.0"
+edit = "0.1.4"
