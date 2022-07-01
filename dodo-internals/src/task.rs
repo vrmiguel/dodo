@@ -35,7 +35,7 @@ impl PartialOrd for Task {
         let self_due_date = &self.due_date.unwrap();
         let other_due_date = &other.due_date.unwrap();
 
-        Some(self_due_date.cmp(other_due_date).reverse())
+        Some(other_due_date.cmp(self_due_date))
     }
 }
 
