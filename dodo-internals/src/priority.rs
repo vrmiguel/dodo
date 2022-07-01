@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// assert!(Priority::Medium > Priority::Low);
 /// assert!(Priority::High > Priority::Medium);
 /// ```
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy)]
 pub enum Priority {
     High,
     Medium,

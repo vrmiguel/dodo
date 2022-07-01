@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::Checkbox;
 
 #[non_exhaustive]
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 /// A [`Checklist`](crate::Checklist) is a collection of [checkboxes](crate::Checkbox).
 pub struct Checklist {
     checkboxes: Vec<Checkbox>,

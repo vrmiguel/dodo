@@ -3,8 +3,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Checklist, Priority};
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[repr(transparent)]
+pub struct TaskSet(Vec<Task>);
+
 /// Represents a to-do task
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct Task {
     /// This task's name
     pub name: String,
