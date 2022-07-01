@@ -39,7 +39,6 @@ fn run() -> Result<()> {
             // the current entry
             let tasks = bookkeeper.last_entry_taskset()?;
             bookkeeper.append_to_today(&tasks)?;
-            dbg!();
             println!("{tasks}");
         }
     }
@@ -64,7 +63,6 @@ pub fn sample_task() -> Task {
     Task {
         name: "Fill out my tasks".into(),
         is_done: false,
-        description: "Write about stuff I need to do today".into(),
         creation_date: today(),
         due_date: None,
         priority: Priority::High,

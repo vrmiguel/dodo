@@ -29,11 +29,10 @@ impl Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let is_done = if self.is_done { "x" } else { " " };
         let name = &self.name;
-        let desc = &self.description;
         let priority = self.priority;
         let checklist = &self.checklist;
 
-        writeln!(f, "[{is_done}] {name} - {desc} [{priority}]")?;
+        writeln!(f, "[{is_done}] {name} [{priority}]")?;
         writeln!(f, "{checklist}")
     }
 }
@@ -45,8 +44,6 @@ pub struct Task {
     pub name: String,
     /// Whether or not this task is done
     pub is_done: bool,
-    /// This task's description
-    pub description: String,
     /// When this task was created
     pub creation_date: NaiveDate,
     /// This tasks's due date, if any
@@ -87,7 +84,6 @@ mod tests {
         Task {
             name: "Dummy".into(),
             is_done: false,
-            description: "Do something".into(),
             creation_date: today(),
             due_date: None,
             priority: Priority::Low,
