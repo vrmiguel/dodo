@@ -1,3 +1,4 @@
+use dodo::Checkbox;
 pub use dodo_internals as dodo;
 pub use error::{Error, Result};
 
@@ -32,21 +33,24 @@ fn run() -> Result<()> {
             // Clean slate: there are no tasks to move over to today!
             println!("adding sample task");
             let task = Task {
-                name: String::new(),
+                name: "Fazer o TCC".into(),
                 is_done: true,
-                description: String::new(),
+                description: "Começar a introdução".into(),
                 creation_date: today,
                 due_date: None,
                 priority: Priority::High,
-                checklist: vec![].into_iter().collect(),
+                checklist: vec![Checkbox::with_description("Procurar metodologia".into())]
+                    .into_iter()
+                    .collect(),
             };
             bookkeeper.append_to_today(&[task])?;
         } else {
             // We'll move the pending tasks from the last entry over to
             // the current entry
-            let tasks = bookkeeper.last_entry_tasks()?;
+            let tasks = bookkeeper.last_entry_taskset()?;
             bookkeeper.append_to_today(&tasks)?;
-            dbg!(tasks);
+            dbg!();
+            println!("{tasks}");
         }
     }
 

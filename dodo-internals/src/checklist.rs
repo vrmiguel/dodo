@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     iter::FromIterator,
     ops::{Deref, Index},
 };
@@ -12,6 +13,16 @@ use crate::Checkbox;
 /// A [`Checklist`](crate::Checklist) is a collection of [checkboxes](crate::Checkbox).
 pub struct Checklist {
     checkboxes: Vec<Checkbox>,
+}
+
+impl Display for Checklist {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for checkbox in &self.checkboxes {
+            writeln!(f, "    * {}", checkbox)?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Checklist {

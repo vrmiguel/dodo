@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt::Display};
 
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +15,22 @@ pub enum Priority {
     High,
     Medium,
     Low,
+}
+
+impl Priority {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Priority::High => "HIGH",
+            Priority::Medium => "MEDIUM",
+            Priority::Low => "LOW",
+        }
+    }
+}
+
+impl Display for Priority {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
 }
 
 impl PartialOrd for Priority {

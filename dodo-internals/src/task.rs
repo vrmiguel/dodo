@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
@@ -6,6 +8,35 @@ use crate::{Checklist, Priority};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[repr(transparent)]
 pub struct TaskSet(Vec<Task>);
+
+impl Display for TaskSet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (i, task) in self.0.iter().enumerate() {
+            writeln!(f, "{}. {}", i + 1, task)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl AsRef<[Task]> for TaskSet {
+    fn as_ref(&self) -> &[Task] {
+        &self.0
+    }
+}
+
+impl Display for Task {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let is_done = if self.is_done { "x" } else { " " };
+        let name = &self.name;
+        let desc = &self.description;
+        let priority = self.priority;
+        let checklist = &self.checklist;
+
+        writeln!(f, "[{is_done}] {name} - {desc} [{priority}]")?;
+        writeln!(f, "{checklist}")
+    }
+}
 
 /// Represents a to-do task
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -22,8 +53,8 @@ pub struct Task {
     pub due_date: Option<NaiveDate>,
     /// This task's overall priority
     pub priority: Priority,
-    /// This task's checklist, if any
-    pub checklist: Option<Checklist>,
+    /// This task's checklist
+    pub checklist: Checklist,
 }
 
 impl PartialOrd for Task {
@@ -49,6 +80,7 @@ mod tests {
 
     use super::Priority;
     use super::Task;
+    use crate::Checkbox;
     use chrono::Duration;
 
     fn dummy_task() -> Task {
@@ -59,8 +91,15 @@ mod tests {
             creation_date: today(),
             due_date: None,
             priority: Priority::Low,
-            checklist: None,
+            checklist: vec![Checkbox::with_description("Procurar metodologia".into())]
+                .into_iter()
+                .collect(),
         }
+    }
+
+    #[test]
+    fn display() {
+        println!("{t}", t = dummy_task());
     }
 
     #[test]

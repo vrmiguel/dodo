@@ -13,7 +13,7 @@ use fs_err as fs;
 use fs_err::{File, OpenOptions};
 
 use directories::ProjectDirs;
-use dodo_internals::{chrono::NaiveDate, utils::today, Task};
+use dodo_internals::{chrono::NaiveDate, utils::today, Task, TaskSet};
 
 use crate::formatting::{DateBuffer, FMT_STRING};
 use crate::{Error, Result};
@@ -59,7 +59,7 @@ impl Bookkeeper {
         }
     }
 
-    pub(crate) fn last_entry_tasks(&self) -> Result<Vec<Task>> {
+    pub(crate) fn last_entry_taskset(&self) -> Result<TaskSet> {
         let mut buf = DateBuffer::new();
 
         let path = buf.format_path(self.last_entry)?;
@@ -79,7 +79,7 @@ impl Bookkeeper {
     ///
     /// After this, the current task list will be considered
     /// the last entry.
-    pub fn append_to_today(&mut self, tasks: &[Task]) -> Result<()> {
+    pub fn append_to_today(&mut self, tasks: impl AsRef<[Task]>) -> Result<()> {
         let today = today();
 
         if self.last_entry != today {
@@ -93,7 +93,7 @@ impl Bookkeeper {
             open_or_create(path)?
         };
 
-        bincode::serialize_into(last_entry_file, tasks)?;
+        bincode::serialize_into(last_entry_file, tasks.as_ref())?;
 
         Ok(())
     }

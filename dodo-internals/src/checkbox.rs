@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{fmt::Display, ops::Deref};
 
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,15 @@ use serde::{Deserialize, Serialize};
 pub struct Checkbox {
     description: String,
     is_done: bool,
+}
+
+impl Display for Checkbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let is_done = if self.is_done { "x" } else { " " };
+        let desc = &self.description;
+
+        write!(f, "[{is_done}] {desc}")
+    }
 }
 
 impl Checkbox {
