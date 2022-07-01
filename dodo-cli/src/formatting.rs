@@ -7,7 +7,7 @@ use dodo_internals::chrono::NaiveDate;
 use crate::Result;
 
 pub const FMT_STRING: &str = "%Y-%m-%d";
-const FMT_STRING_WITH_EXT: &str = "%Y-%m-%d.bin";
+pub const FMT_STRING_WITH_EXT: &str = "%Y-%m-%d.bin";
 
 /// Enough bytes to hold dates in the format "YYYY-mm-dd.bin"
 pub struct DateBuffer {

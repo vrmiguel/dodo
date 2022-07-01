@@ -2,7 +2,6 @@
 
 use std::{
     env,
-    fs::{self, File, OpenOptions},
     io::prelude::*,
     io::SeekFrom,
     io::{BufRead, BufReader},
@@ -10,10 +9,13 @@ use std::{
     path::Path,
 };
 
-use directories::ProjectDirs;
-use dodo_internals::{chrono::NaiveDate, utils::today};
+use fs_err as fs;
+use fs_err::{File, OpenOptions};
 
-use crate::formatting::FMT_STRING;
+use directories::ProjectDirs;
+use dodo_internals::{chrono::NaiveDate, utils::today, Task};
+
+use crate::formatting::{DateBuffer, FMT_STRING};
 use crate::{Error, Result};
 
 pub struct Bookkeeper {
@@ -30,7 +32,7 @@ impl Bookkeeper {
     pub fn init() -> Result<Self> {
         let mut bookkeeping_file = open_or_create("bookkeeper")?;
 
-        let end_pos = dbg!(bookkeeping_file.seek(SeekFrom::End(0)))?;
+        let end_pos = bookkeeping_file.seek(SeekFrom::End(0))?;
 
         if end_pos == 0 {
             // Bookkeeping file is empty, therefore the latest date we
@@ -43,7 +45,7 @@ impl Bookkeeper {
             // All lines in the bookkeeping file must be 11 bytes long (10 bytes for the date and a newline)
             bookkeeping_file.seek(SeekFrom::Start(end_pos - 11))?;
 
-            // This mustn't fail unless the bookkeeping file became malformeds
+            // This mustn't fail unless the bookkeeping file became malformed
             let line = first_line(&bookkeeping_file).expect("Malformed line in bookkeeping file");
             let date = NaiveDate::parse_from_str(&line, FMT_STRING)?;
 
@@ -56,6 +58,45 @@ impl Bookkeeper {
             Err(Error::InvalidBookkeepingFile)
         }
     }
+
+    pub(crate) fn last_entry_tasks(&self) -> Result<Vec<Task>> {
+        let mut buf = DateBuffer::new();
+
+        let path = buf.format_path(self.last_entry)?;
+        let file = File::open(path)?;
+
+        bincode::deserialize_from(file).map_err(Into::into)
+    }
+
+    fn append_to_bookkeeping_file(&mut self, date: NaiveDate) -> Result<()> {
+        let fmt = date.format(FMT_STRING);
+
+        dbg!("hey");
+        writeln!(self.bookkeeping_file, "{fmt}").map_err(Into::into)
+    }
+
+    /// Appends the given entries to today's task list.
+    ///
+    /// After this, the current task list will be considered
+    /// the last entry.
+    pub fn append_to_today(&mut self, tasks: &[Task]) -> Result<()> {
+        let today = today();
+
+        if self.last_entry != today {
+            self.append_to_bookkeeping_file(today)?;
+            self.last_entry = today;
+        }
+
+        let last_entry_file = {
+            let mut buf = DateBuffer::new();
+            let path = buf.format_path(self.last_entry)?;
+            open_or_create(path)?
+        };
+
+        bincode::serialize_into(last_entry_file, tasks)?;
+
+        Ok(())
+    }
 }
 
 pub fn open_or_create(path: impl AsRef<Path>) -> Result<File> {
@@ -64,7 +105,7 @@ pub fn open_or_create(path: impl AsRef<Path>) -> Result<File> {
         .write(true)
         .truncate(false)
         .create(true)
-        .open(path)
+        .open(path.as_ref())
         .map_err(Into::into)
 }
 

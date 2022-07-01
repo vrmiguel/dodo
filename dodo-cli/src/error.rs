@@ -6,13 +6,13 @@ use thiserror::Error as ErrorMacro;
 #[derive(ErrorMacro, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    #[error("IO: `{0}`")]
+    #[error("IO: {0}")]
     Io(#[from] std::io::Error),
-    #[error("Bincode: `{0}`")]
+    #[error("Bincode: {0}")]
     Bincode(#[from] bincode::Error),
     #[error("No valid home directory was found")]
     NoValidHomeDirFound,
-    #[error("Could not create folder `{0}`")]
+    #[error("Could not create folder '{0}'")]
     CouldNotCreateFolder(PathBuf),
     #[error("The bookkeeping file is invalid")]
     InvalidBookkeepingFile,
