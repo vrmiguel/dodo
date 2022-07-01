@@ -1,24 +1,39 @@
 pub use dodo_internals as dodo;
+pub use error::{Error, Result};
 
-use dodo::{Priority, Task};
-use std::fs::File;
+// use dodo::{Priority, Task};
+use file_ext::FileExt;
+use files::Bookkeeper;
+use formatting::DateBuffer;
 
-fn main() {
-    let output = File::open("hehehe").unwrap();
+mod error;
+mod file_ext;
+mod files;
+mod formatting;
 
-    let task = dodo::Task {
-        name: "Hey".into(),
-        is_done: true,
-        description: "Hahaha".into(),
-        creation_date: dodo::utils::today(),
-        due_date: None,
-        priority: Priority::High,
-        checklist: vec![].into_iter().collect(),
+fn run() -> Result<()> {
+    let mut date_buf = DateBuffer::new();
+    let today = dodo::utils::today();
+
+    files::move_to_data_dir()?;
+
+    // Check if there's already a task file for the current day
+    let file = {
+        let path = date_buf.format_path(today)?;
+        files::open_or_create(path)?
     };
 
-    // let _ = dbg!(bincode::serialize_into(&output, &task));
+    if file.is_empty()? {
+        eprintln!("Creating initial file for {today}");
+        // TODO: check yesterday's file
+        Bookkeeper::init()?;
+    }
 
-    let deserialized: Task = bincode::deserialize_from(output).unwrap();
+    Ok(())
+}
 
-    assert_eq!(task, deserialized);
+fn main() {
+    if let Err(err) = run() {
+        println!("Error: {err}");
+    }
 }
