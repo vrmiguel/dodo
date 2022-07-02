@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, fmt::Display, str::FromStr};
+use std::{cmp::Ordering, fmt::Display};
 
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +10,9 @@ use serde::{Deserialize, Serialize};
 /// assert!(Priority::Medium > Priority::Low);
 /// assert!(Priority::High > Priority::Medium);
 /// ```
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy)]
+#[derive(
+    Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy,
+)]
 pub enum Priority {
     High,
     Medium,
@@ -37,7 +39,10 @@ impl Priority {
 }
 
 impl Display for Priority {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
     }
 }

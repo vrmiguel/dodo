@@ -1,13 +1,10 @@
-use dodo::utils::today;
-use dodo::Checkbox;
+use dodo::{utils::today, Checkbox, Priority, Task};
 pub use dodo_internals as dodo;
 pub use error::{Error, Result};
-
-use dodo::Priority;
-use dodo::Task;
 use file_ext::FileExt;
 use files::Bookkeeper;
 use formatting::DateBuffer;
+use parser::Parser;
 
 mod error;
 mod file_ext;
@@ -32,12 +29,13 @@ fn run() -> Result<()> {
     if file.is_empty()? {
         eprintln!("Creating initial file for {today}");
         if bookkeeper.last_entry == today {
-            // Clean slate: there are no tasks to move over to today!
+            // Clean slate: there are no tasks to move over to
+            // today!
             println!("Adding a sample task");
             bookkeeper.append_to_today(&[sample_task()])?;
         } else {
-            // We'll move the pending tasks from the last entry over to
-            // the current entry
+            // We'll move the pending tasks from the last entry
+            // over to the current entry
             let tasks = bookkeeper.last_entry_taskset()?;
             bookkeeper.append_to_today(&tasks)?;
             println!("{tasks}");
@@ -49,7 +47,9 @@ fn run() -> Result<()> {
     // Let the user edit the task set as he sees fit
     let edited_text = edit::edit(task_set.to_string())?;
 
-    dbg!(edited_text);
+    let edited_tasks = Parser::parse(&edited_text)?;
+
+    println!("{edited_tasks}");
 
     Ok(())
 }

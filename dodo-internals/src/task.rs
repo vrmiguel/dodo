@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Checklist, Priority};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[repr(transparent)]
-pub struct TaskSet(Vec<Task>);
+pub struct TaskSet(pub Vec<Task>);
 
 impl Display for TaskSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

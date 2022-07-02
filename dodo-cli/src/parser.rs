@@ -1,7 +1,5 @@
-use std::ops::Not;
-
 use dodo_internals::{
-    utils::today, Checkbox, Checklist, Priority, Task,
+    utils::today, Checkbox, Checklist, Priority, Task, TaskSet,
 };
 use nom::{
     branch::alt,
@@ -183,7 +181,7 @@ fn parse_priority(input: &str) -> IResult<&str, Priority> {
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(input: &str) -> Result<Vec<Task>> {
+    pub fn parse(input: &str) -> Result<TaskSet> {
         // This function reimplements nom's many0 because it
         // somehow behaves incorrectly here
         let mut tasks = Vec::new();
@@ -206,14 +204,14 @@ impl Parser {
             }
         }
 
-        Ok(tasks)
+        Ok(TaskSet(tasks))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use dodo_internals::{
-        utils::today, Checkbox, Priority, Task,
+        utils::today, Checkbox, Priority, Task, TaskSet,
     };
 
     use super::{
@@ -368,7 +366,7 @@ mod tests {
 
         assert_eq!(
             Parser::parse(task).unwrap(),
-            vec![
+            TaskSet(vec![
                 Task {
                     name: "Fill out my tasks".into(),
                     is_done: false,
@@ -399,7 +397,7 @@ mod tests {
                     .into_iter()
                     .collect()
                 }
-            ]
+            ])
         );
     }
 
