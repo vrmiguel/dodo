@@ -30,6 +30,10 @@ impl Checkbox {
         }
     }
 
+    pub fn with_status(self, is_done: bool) -> Self {
+        Self { is_done, ..self }
+    }
+
     /// The description of this checkbox
     /// ```rust
     /// use dodo_internals::Checkbox;

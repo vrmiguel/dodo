@@ -1,17 +1,22 @@
 use std::ops::Not;
 
-use dodo_internals::{Priority, Task};
+use dodo_internals::{Checkbox, Priority, Task};
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_till, take_while},
-    character::complete::{char, multispace0},
+    character::{
+        complete::{char, multispace0},
+        is_newline,
+    },
     error::{ErrorKind, ParseError},
+    multi::many0,
     sequence::{self, delimited, terminated},
     Err, IResult, Needed,
     Needed::Size,
 };
 
-#[cfg_attr(test, derive(Debug, PartialEq))]
+#[derive(Debug, PartialEq)]
+// #[cfg_attr(test, derive(Debug, PartialEq))]
 struct TaskHeader<'a> {
     idx: u32,
     is_checked: bool,
@@ -22,10 +27,13 @@ struct TaskHeader<'a> {
 pub struct Parser;
 
 impl Parser {
-    // pub fn parse(input: &str) -> IResult<&str, &str> {
+    pub fn parse(input: &str) -> IResult<&str, ()> {
+        let (rest, header) = parse_task_header(input)?;
 
-    // todo!()
-    // }
+        let (rest, checkboxes) = many0(parse_checkbox)(rest)?;
+
+        Ok((rest, ()))
+    }
 }
 
 fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
@@ -37,8 +45,8 @@ where
     sequence::delimited(multispace0, inner, multispace0)
 }
 
-// fn rsplit_at_byte(input: &str, chr: char) -> Option<(&str, &str)> {
-//     let flip = |(a, b)| (b, a);
+// fn rsplit_at_byte(input: &str, chr: char) -> Option<(&str,
+// &str)> {     let flip = |(a, b)| (b, a);
 
 //     input.rfind(chr).map(|idx| input.split_at(idx)).map(flip)
 // }
@@ -60,6 +68,27 @@ fn parse_task_header(input: &str) -> IResult<&str, TaskHeader> {
     };
 
     Ok((rest, header))
+}
+
+/// Parses a [`Checkbox`], which consists of an asterisk, a
+/// checkmark and a description.
+///
+/// Examples:
+/// '* [x] Finish this doctest'
+fn parse_checkbox(input: &str) -> IResult<&str, Checkbox> {
+    let input = input.trim_start();
+
+    let (rest, _asterisk) = ws(char('*'))(input)?;
+
+    let (rest, is_checked) = parse_checkmark(rest)?;
+
+    let (rest, description) = take_till(|ch| ch == '\n')(rest)?;
+
+    let checkbox =
+        Checkbox::with_description(description.trim().into())
+            .with_status(is_checked);
+
+    Ok((rest, checkbox))
 }
 
 /// Parses number tags consisting of a number followed by a dot.
@@ -85,7 +114,8 @@ fn parse_index(input: &str) -> IResult<&str, u32> {
     Ok((rest, number))
 }
 
-/// Parses checkmarks consisting of a "x", "X" or " " within brackets.
+/// Parses checkmarks consisting of a "x", "X" or " " within
+/// brackets.
 ///
 /// Examples: "[x]", "[X]", "[ ]"
 fn parse_checkmark(input: &str) -> IResult<&str, bool> {
@@ -120,17 +150,22 @@ fn parse_priority(input: &str) -> IResult<&str, Priority> {
     )(input)?;
 
     // TODO: error mgmt
-    let priority = Priority::from_str(priority).expect("invalid priority text");
+    let priority = Priority::from_str(priority)
+        .expect("invalid priority text");
 
     Ok((rest, priority))
 }
 
 #[cfg(test)]
 mod tests {
-    use dodo_internals::Priority;
+    use dodo_internals::{Checkbox, Priority};
 
-    use super::{parse_checkmark, parse_index, parse_task_header};
-    use crate::parser::{parse_priority, TaskHeader};
+    use super::{
+        parse_checkmark, parse_index, parse_task_header, Parser,
+    };
+    use crate::parser::{
+        parse_checkbox, parse_priority, TaskHeader,
+    };
 
     #[test]
     fn parses_number_tags() {
@@ -143,7 +178,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_checkbox() {
+    fn parses_checkmark() {
         assert_eq!(parse_checkmark("[x]"), Ok(("", true)));
         assert_eq!(parse_checkmark("[X]"), Ok(("", true)));
         assert_eq!(parse_checkmark("[ ]"), Ok(("", false)));
@@ -153,17 +188,55 @@ mod tests {
     }
 
     #[test]
+    fn parses_checkboxes() {
+        assert_eq!(
+            parse_checkbox("  * [x] Finish this test"),
+            Ok((
+                "",
+                Checkbox::with_description(
+                    "Finish this test".into()
+                )
+                .with_status(true)
+            ))
+        );
+
+        assert_eq!(
+            parse_checkbox("*[ ] Finish this test\n"),
+            Ok((
+                "\n",
+                Checkbox::with_description(
+                    "Finish this test".into()
+                )
+                .with_status(false)
+            ))
+        );
+    }
+
+    #[test]
     fn parses_priority() {
-        assert_eq!(parse_priority("[HIGH]"), Ok(("", Priority::High)));
+        assert_eq!(
+            parse_priority("[HIGH]"),
+            Ok(("", Priority::High))
+        );
 
         assert_eq!(
             parse_priority("[MEDIUM]"),
             Ok(("", Priority::Medium))
         );
 
-        assert_eq!(parse_priority("[LOW]"), Ok(("", Priority::Low)));
+        assert_eq!(
+            parse_priority("[LOW]"),
+            Ok(("", Priority::Low))
+        );
 
         // TODO: test error cases
+    }
+
+    #[test]
+    fn parse_task() {
+        let task = "1. [ ] Fill out my tasks [HIGH]\n  * [ ] Figure out how to use dodo\n";
+
+        dbg!(Parser::parse(task));
     }
 
     #[test]
@@ -182,7 +255,9 @@ mod tests {
         );
 
         assert_eq!(
-            parse_task_header("20.[x] Finish this test [MEDIUM]"),
+            parse_task_header(
+                "20.[x] Finish this test [MEDIUM]"
+            ),
             Ok((
                 "",
                 TaskHeader {
