@@ -71,7 +71,8 @@ impl Bookkeeper {
     fn append_to_bookkeeping_file(&mut self, date: NaiveDate) -> Result<()> {
         let fmt = date.format(FMT_STRING);
 
-        dbg!("hey");
+        // TODO: check if it was already added in order to avoid adding repeated
+        // entries
         writeln!(self.bookkeeping_file, "{fmt}").map_err(Into::into)
     }
 

@@ -13,6 +13,7 @@ mod error;
 mod file_ext;
 mod files;
 mod formatting;
+mod parser;
 
 fn run() -> Result<()> {
     let today = dodo::utils::today();

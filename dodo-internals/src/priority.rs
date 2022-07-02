@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, fmt::Display};
+use std::{cmp::Ordering, fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +23,15 @@ impl Priority {
             Priority::High => "HIGH",
             Priority::Medium => "MEDIUM",
             Priority::Low => "LOW",
+        }
+    }
+
+    pub fn from_str(input: &str) -> Option<Self> {
+        match input {
+            "HIGH" | "high" => Some(Self::High),
+            "MEDIUM" | "mediums" => Some(Self::Medium),
+            "LOW" | "low" => Some(Self::Low),
+            _ => None,
         }
     }
 }

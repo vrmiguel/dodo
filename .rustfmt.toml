@@ -1,0 +1,7 @@
+edition = "2021"
+imports_granularity = "Crate"
+newline_style = "Unix"
+wrap_comments = true
+reorder_imports = true
+group_imports = "StdExternalCrate"
+fn_call_width = 50
