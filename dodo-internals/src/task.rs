@@ -38,7 +38,9 @@ impl Display for Task {
 }
 
 /// Represents a to-do task
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[derive(
+    Debug, Serialize, Deserialize, PartialEq, Eq, Clone,
+)]
 pub struct Task {
     /// This task's name
     pub name: String,
@@ -55,15 +57,24 @@ pub struct Task {
 }
 
 impl PartialOrd for Task {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let both_have_due_dates = self.due_date.is_some() && other.due_date.is_some();
-        // If any of the tasks have no due date, then the comparison is based on priority only
-        if !both_have_due_dates || self.priority != other.priority {
+    fn partial_cmp(
+        &self,
+        other: &Self,
+    ) -> Option<std::cmp::Ordering> {
+        let both_have_due_dates =
+            self.due_date.is_some() && other.due_date.is_some();
+        // If any of the tasks have no due date, then the
+        // comparison is based on priority only
+        if !both_have_due_dates
+            || self.priority != other.priority
+        {
             return self.priority.partial_cmp(&other.priority);
         }
 
-        // We now know that both tasks have the same priority so the comparison will be based on the due date
-        // We also know that both tasks have a due date, so the unwraps are safe.
+        // We now know that both tasks have the same priority so
+        // the comparison will be based on the due date
+        // We also know that both tasks have a due date, so the
+        // unwraps are safe.
         let self_due_date = &self.due_date.unwrap();
         let other_due_date = &other.due_date.unwrap();
 
@@ -73,12 +84,10 @@ impl PartialOrd for Task {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::today;
-
-    use super::Priority;
-    use super::Task;
-    use crate::Checkbox;
     use chrono::Duration;
+
+    use super::{Priority, Task};
+    use crate::{utils::today, Checkbox};
 
     fn dummy_task() -> Task {
         Task {
@@ -87,9 +96,11 @@ mod tests {
             creation_date: today(),
             due_date: None,
             priority: Priority::Low,
-            checklist: vec![Checkbox::with_description("Procurar metodologia".into())]
-                .into_iter()
-                .collect(),
+            checklist: vec![Checkbox::with_description(
+                "Procurar metodologia".into(),
+            )]
+            .into_iter()
+            .collect(),
         }
     }
 
@@ -132,12 +143,14 @@ mod tests {
 
         assert!(task1.priority == task2.priority);
 
-        // Task no. 1 has the priority since it's closer to its due date than task no. 2
+        // Task no. 1 has the priority since it's closer to its
+        // due date than task no. 2
         assert!(task1 > task2);
 
         task2.due_date = Some(today);
 
-        // Task no. 2 now has the priority since it's closer to its due date than task no. 1
+        // Task no. 2 now has the priority since it's closer to
+        // its due date than task no. 1
         assert!(task1 < task2);
     }
 }

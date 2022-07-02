@@ -1,6 +1,8 @@
 use std::ops::Not;
 
-use dodo_internals::{Checkbox, Priority, Task};
+use dodo_internals::{
+    utils::today, Checkbox, Checklist, Priority, Task,
+};
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_till, take_while},
@@ -20,19 +22,37 @@ use nom::{
 struct TaskHeader<'a> {
     idx: u32,
     is_checked: bool,
-    description: &'a str,
+    name: &'a str,
     priority: Priority,
+}
+
+impl TaskHeader<'_> {
+    pub fn with_checkboxes(
+        self,
+        checkboxes: Vec<Checkbox>,
+    ) -> Task {
+        Task {
+            name: self.name.to_owned(),
+            is_done: self.is_checked,
+            // TODO: figure this out
+            creation_date: today(),
+            // TODO: figure this out
+            due_date: None,
+            priority: self.priority,
+            checklist: Checklist::with_checkboxes(checkboxes),
+        }
+    }
 }
 
 pub struct Parser;
 
 impl Parser {
-    pub fn parse(input: &str) -> IResult<&str, ()> {
+    pub fn parse(input: &str) -> IResult<&str, Task> {
         let (rest, header) = parse_task_header(input)?;
 
         let (rest, checkboxes) = many0(parse_checkbox)(rest)?;
 
-        Ok((rest, ()))
+        Ok((rest, header.with_checkboxes(checkboxes)))
     }
 }
 
@@ -63,7 +83,7 @@ fn parse_task_header(input: &str) -> IResult<&str, TaskHeader> {
     let header = TaskHeader {
         idx,
         is_checked,
-        description: description.trim(),
+        name: description.trim(),
         priority,
     };
 
@@ -158,7 +178,9 @@ fn parse_priority(input: &str) -> IResult<&str, Priority> {
 
 #[cfg(test)]
 mod tests {
-    use dodo_internals::{Checkbox, Priority};
+    use dodo_internals::{
+        utils::today, Checkbox, Priority, Task,
+    };
 
     use super::{
         parse_checkmark, parse_index, parse_task_header, Parser,
@@ -233,10 +255,57 @@ mod tests {
     }
 
     #[test]
-    fn parse_task() {
+    fn parse_task_1() {
         let task = "1. [ ] Fill out my tasks [HIGH]\n  * [ ] Figure out how to use dodo\n";
 
-        dbg!(Parser::parse(task));
+        assert_eq!(
+            Parser::parse(task),
+            Ok((
+                "\n",
+                Task {
+                    name: "Fill out my tasks".into(),
+                    is_done: false,
+                    creation_date: today(),
+                    due_date: None,
+                    priority: Priority::High,
+                    checklist: [Checkbox::with_description(
+                        "Figure out how to use dodo".into()
+                    )]
+                    .into_iter()
+                    .collect()
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_task_2() {
+        let task = "1. [ ] Fill out my tasks [HIGH]\n  * [ ] Figure out how to use dodo\n* [x] Make this test pass\n";
+
+        assert_eq!(
+            Parser::parse(task),
+            Ok((
+                "\n",
+                Task {
+                    name: "Fill out my tasks".into(),
+                    is_done: false,
+                    creation_date: today(),
+                    due_date: None,
+                    priority: Priority::High,
+                    checklist: [
+                        Checkbox::with_description(
+                            "Figure out how to use dodo".into()
+                        ),
+                        Checkbox::with_description(
+                            "Make this test pass".into()
+                        )
+                        .with_status(true)
+                    ]
+                    .into_iter()
+                    .collect()
+                }
+            ))
+        );
     }
 
     #[test]
@@ -248,7 +317,7 @@ mod tests {
                 TaskHeader {
                     idx: 1,
                     is_checked: false,
-                    description: "Fill out my tasks",
+                    name: "Fill out my tasks",
                     priority: Priority::High
                 }
             ))
@@ -263,7 +332,7 @@ mod tests {
                 TaskHeader {
                     idx: 20,
                     is_checked: true,
-                    description: "Finish this test",
+                    name: "Finish this test",
                     priority: Priority::Medium
                 }
             ))
