@@ -5,17 +5,18 @@ use dodo_internals::{
 };
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_till, take_while},
-    character::{
-        complete::{char, multispace0},
-        is_newline,
+    bytes::{
+        complete::{tag, take_till, take_while},
+        streaming::take,
     },
-    error::{ErrorKind, ParseError},
+    character::complete::{char, multispace0},
+    error::ParseError,
     multi::many0,
-    sequence::{self, delimited, terminated},
-    Err, IResult, Needed,
-    Needed::Size,
+    sequence::{self, delimited},
+    IResult,
 };
+
+use crate::Result;
 
 #[derive(Debug, PartialEq)]
 // #[cfg_attr(test, derive(Debug, PartialEq))]
@@ -44,18 +45,6 @@ impl TaskHeader<'_> {
     }
 }
 
-pub struct Parser;
-
-impl Parser {
-    pub fn parse(input: &str) -> IResult<&str, Task> {
-        let (rest, header) = parse_task_header(input)?;
-
-        let (rest, checkboxes) = many0(parse_checkbox)(rest)?;
-
-        Ok((rest, header.with_checkboxes(checkboxes)))
-    }
-}
-
 fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
     inner: F,
 ) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
@@ -71,19 +60,32 @@ where
 //     input.rfind(chr).map(|idx| input.split_at(idx)).map(flip)
 // }
 
+fn parse_task(input: &str) -> IResult<&str, Task> {
+    let input = input.trim_start();
+
+    let (rest, header) = parse_task_header(input)?;
+
+    let (rest, checkboxes) = many0(parse_checkbox)(rest)?;
+
+    Ok((
+        rest.trim_end(),
+        header.with_checkboxes(checkboxes),
+    ))
+}
+
 fn parse_task_header(input: &str) -> IResult<&str, TaskHeader> {
     let (rest, idx) = parse_index(input)?;
 
     let (rest, is_checked) = parse_checkmark(rest)?;
 
-    let (rest, description) = take_till(|ch| ch == '[')(rest)?;
+    let (rest, name) = take_till(|ch| ch == '[')(rest)?;
 
     let (rest, priority) = parse_priority(rest)?;
 
     let header = TaskHeader {
         idx,
         is_checked,
-        name: description.trim(),
+        name: name.trim(),
         priority,
     };
 
@@ -115,6 +117,8 @@ fn parse_checkbox(input: &str) -> IResult<&str, Checkbox> {
 ///
 /// Examples: "1.", "230."
 fn parse_index(input: &str) -> IResult<&str, u32> {
+    let input = input.trim_start();
+
     let is_digit = |chr: char| {
         let chr = chr as u8;
         (0x30..=0x39).contains(&chr)
@@ -122,8 +126,8 @@ fn parse_index(input: &str) -> IResult<&str, u32> {
 
     let (rest, digits) = take_while(is_digit)(input)?;
 
-    // TODO: turn this into an actual error
-    assert!(digits.is_empty().not());
+    // Ensure digits is not empty
+    let (_, _): (&str, &str) = take(1_usize)(digits)?;
 
     let (rest, _) = char('.')(rest)?;
 
@@ -176,6 +180,36 @@ fn parse_priority(input: &str) -> IResult<&str, Priority> {
     Ok((rest, priority))
 }
 
+pub struct Parser;
+
+impl Parser {
+    pub fn parse(input: &str) -> Result<Vec<Task>> {
+        // This function reimplements nom's many0 because it
+        // somehow behaves incorrectly here
+        let mut tasks = Vec::new();
+        let mut rest = input;
+
+        loop {
+            match parse_task(rest) {
+                Ok((new_rest, task)) => {
+                    tasks.push(task);
+                    rest = new_rest;
+                }
+                Err(err) => {
+                    eprintln!("Parsing problem: {err}");
+                    // TODO: check if this problem came up
+                    // because of an empty string (which is
+                    // expected) or if because of a more severe
+                    // error
+                    break;
+                }
+            }
+        }
+
+        Ok(tasks)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use dodo_internals::{
@@ -186,7 +220,7 @@ mod tests {
         parse_checkmark, parse_index, parse_task_header, Parser,
     };
     use crate::parser::{
-        parse_checkbox, parse_priority, TaskHeader,
+        parse_checkbox, parse_priority, parse_task, TaskHeader,
     };
 
     #[test]
@@ -255,11 +289,31 @@ mod tests {
     }
 
     #[test]
+    fn parse_task_0() {
+        let task = "1. [ ] Fill out my tasks [HIGH]\n";
+
+        assert_eq!(
+            parse_task(task),
+            Ok((
+                "\n",
+                Task {
+                    name: "Fill out my tasks".into(),
+                    is_done: false,
+                    creation_date: today(),
+                    due_date: None,
+                    priority: Priority::High,
+                    checklist: [].into_iter().collect()
+                }
+            ))
+        );
+    }
+
+    #[test]
     fn parse_task_1() {
         let task = "1. [ ] Fill out my tasks [HIGH]\n  * [ ] Figure out how to use dodo\n";
 
         assert_eq!(
-            Parser::parse(task),
+            parse_task(task),
             Ok((
                 "\n",
                 Task {
@@ -283,7 +337,7 @@ mod tests {
         let task = "1. [ ] Fill out my tasks [HIGH]\n  * [ ] Figure out how to use dodo\n* [x] Make this test pass\n";
 
         assert_eq!(
-            Parser::parse(task),
+            parse_task(task),
             Ok((
                 "\n",
                 Task {
@@ -305,6 +359,47 @@ mod tests {
                     .collect()
                 }
             ))
+        );
+    }
+
+    #[test]
+    fn parses_many_tasks() {
+        let task = "1. [ ] Fill out my tasks [HIGH]\n  * [ ] Figure out how to use dodo\n* [x] Make this test pass\n2. [ ] Update taskset [HIGH]\n  * [ ] Do the dishes\n";
+
+        assert_eq!(
+            Parser::parse(task).unwrap(),
+            vec![
+                Task {
+                    name: "Fill out my tasks".into(),
+                    is_done: false,
+                    creation_date: today(),
+                    due_date: None,
+                    priority: Priority::High,
+                    checklist: [
+                        Checkbox::with_description(
+                            "Figure out how to use dodo".into()
+                        ),
+                        Checkbox::with_description(
+                            "Make this test pass".into()
+                        )
+                        .with_status(true)
+                    ]
+                    .into_iter()
+                    .collect()
+                },
+                Task {
+                    name: "Update taskset".into(),
+                    is_done: false,
+                    creation_date: today(),
+                    due_date: None,
+                    priority: Priority::High,
+                    checklist: [Checkbox::with_description(
+                        "Do the dishes".into()
+                    )]
+                    .into_iter()
+                    .collect()
+                }
+            ]
         );
     }
 
