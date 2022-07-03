@@ -193,12 +193,11 @@ impl Parser {
                     tasks.push(task);
                     rest = new_rest;
                 }
+                Err(nom::Err::Incomplete(_)) => break,
                 Err(err) => {
                     eprintln!("Parsing problem: {err}");
-                    // TODO: check if this problem came up
-                    // because of an empty string (which is
-                    // expected) or if because of a more severe
-                    // error
+                    // TODO: reopen editor to allow user to fix
+                    // the mistake?
                     break;
                 }
             }
@@ -227,8 +226,7 @@ mod tests {
         assert_eq!(parse_index("123."), Ok(("", 123)));
 
         assert!(parse_index("5").is_err());
-
-        // assert!(parse_number_tag(".").is_err());
+        assert!(parse_index(".").is_err());
     }
 
     #[test]
@@ -293,7 +291,7 @@ mod tests {
         assert_eq!(
             parse_task(task),
             Ok((
-                "\n",
+                "",
                 Task {
                     name: "Fill out my tasks".into(),
                     is_done: false,
@@ -313,7 +311,7 @@ mod tests {
         assert_eq!(
             parse_task(task),
             Ok((
-                "\n",
+                "",
                 Task {
                     name: "Fill out my tasks".into(),
                     is_done: false,
@@ -337,7 +335,7 @@ mod tests {
         assert_eq!(
             parse_task(task),
             Ok((
-                "\n",
+                "",
                 Task {
                     name: "Fill out my tasks".into(),
                     is_done: false,
