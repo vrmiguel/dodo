@@ -5,26 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Checklist, Priority};
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[repr(transparent)]
-pub struct TaskSet(pub Vec<Task>);
-
-impl Display for TaskSet {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, task) in self.0.iter().enumerate() {
-            writeln!(f, "{}. {}", i + 1, task)?;
-        }
-
-        Ok(())
-    }
-}
-
-impl AsRef<[Task]> for TaskSet {
-    fn as_ref(&self) -> &[Task] {
-        &self.0
-    }
-}
-
 impl Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let is_done = if self.is_done { "x" } else { " " };
@@ -42,6 +22,8 @@ impl Display for Task {
     Debug, Serialize, Deserialize, PartialEq, Eq, Clone,
 )]
 pub struct Task {
+    /// The index of this task
+    pub idx: usize,
     /// This task's name
     pub name: String,
     /// Whether or not this task is done
@@ -91,6 +73,7 @@ mod tests {
 
     fn dummy_task() -> Task {
         Task {
+            idx: 1,
             name: "Dummy".into(),
             is_done: false,
             creation_date: today(),

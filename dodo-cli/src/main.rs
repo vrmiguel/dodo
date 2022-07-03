@@ -62,6 +62,7 @@ fn main() {
 
 pub fn sample_task() -> Task {
     Task {
+        idx: 0,
         name: "Fill out my tasks".into(),
         is_done: false,
         creation_date: today(),

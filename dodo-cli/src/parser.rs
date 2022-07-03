@@ -31,6 +31,7 @@ impl TaskHeader<'_> {
         checkboxes: Vec<Checkbox>,
     ) -> Task {
         Task {
+            idx: self.idx as _,
             name: self.name.to_owned(),
             is_done: self.is_checked,
             // TODO: figure this out
@@ -293,6 +294,7 @@ mod tests {
             Ok((
                 "",
                 Task {
+                    idx: 1,
                     name: "Fill out my tasks".into(),
                     is_done: false,
                     creation_date: today(),
@@ -313,6 +315,7 @@ mod tests {
             Ok((
                 "",
                 Task {
+                    idx: 1,
                     name: "Fill out my tasks".into(),
                     is_done: false,
                     creation_date: today(),
@@ -337,6 +340,7 @@ mod tests {
             Ok((
                 "",
                 Task {
+                    idx: 1,
                     name: "Fill out my tasks".into(),
                     is_done: false,
                     creation_date: today(),
@@ -366,6 +370,7 @@ mod tests {
             Parser::parse(task).unwrap(),
             TaskSet(vec![
                 Task {
+                    idx: 1,
                     name: "Fill out my tasks".into(),
                     is_done: false,
                     creation_date: today(),
@@ -384,6 +389,7 @@ mod tests {
                     .collect()
                 },
                 Task {
+                    idx: 2,
                     name: "Update taskset".into(),
                     is_done: false,
                     creation_date: today(),
