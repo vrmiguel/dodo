@@ -16,8 +16,7 @@ use nom::{
 
 use crate::Result;
 
-#[derive(Debug, PartialEq)]
-// #[cfg_attr(test, derive(Debug, PartialEq))]
+#[cfg_attr(test, derive(Debug, PartialEq))]
 struct TaskHeader<'a> {
     idx: u32,
     is_checked: bool,
@@ -52,12 +51,6 @@ where
 {
     sequence::delimited(multispace0, inner, multispace0)
 }
-
-// fn rsplit_at_byte(input: &str, chr: char) -> Option<(&str,
-// &str)> {     let flip = |(a, b)| (b, a);
-
-//     input.rfind(chr).map(|idx| input.split_at(idx)).map(flip)
-// }
 
 fn parse_task(input: &str) -> IResult<&str, Task> {
     let input = input.trim_start();
